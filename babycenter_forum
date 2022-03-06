@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Nov 11 18:03:04 2021
+
+@author: avanthikasenthil
+"""
+import re
+
+from bs4 import BeautifulSoup as bs
+import urllib.request
+import requests
+import pandas as pd
+from pandas import DataFrame as df
+import json
+import time
+from selenium import webdriver
+import numpy as np
+import pandas as pd
+
+PATH = "/Users/avanthikasenthil/Downloads/chromedriver 6"
+#driver = webdriver.Chrome(PATH)
+
+
+url_real = "https://community.babycenter.com/groups/a15325/postpartum_depression_anxiety_and_related_topics"
+page_url = "https://community.babycenter.com/groups/a15325/postpartum_depression_anxiety_and_related_topics?page="
+post_url = "https://community.babycenter.com"
+post = {}
+links = []
+comments = []
+responses = []
+content = np.array(['header', 'post', 'response to', 'comment'])
+source = urllib.request.urlopen(url_real)
+soup = bs(source, 'lxml')
+
+
+
+for i in range(1, 4):
+    if (i == 1):
+        source = urllib.request.urlopen(url_real)
+        soup = bs(source, 'lxml')
+        for link in soup.findAll("a", class_="hoverText", recursive = True):
+            links.append(post_url+link.get("href"))
+    else:
+        url_real = page_url + str(i)
+        source = urllib.request.urlopen(url_real)
+        soup = bs(source, 'lxml')
+        for link in soup.findAll("a", class_="hoverText", recursive = True):
+            lin = link.get("href")
+            links.append(post_url + lin)
+            
+for x in range(1, 3):
+    source = urllib.request.urlopen(links[x])
+    soup = bs(source, 'lxml')
+    header = soup.find("h1", class_="wrapWord").text
+    body = soup.find("div", class_="bodyText").text
+    
+    for com in soup.findAll("li", id = re.compile("comment"), recursive = True):
+            try:
+                   inresponse = com.find("div", class_="bodyText wrapWord").text
+            except:
+                    inresponse = "N/A"
+            try:          
+                comment = com.find("div", class_="bodyText wrapWord mobileMarginProvider").text
+            except:
+                comment = com.find("div", class_="bodyText wrapWord mobileMarginProvider")
+               
+            responses.append(inresponse)
+            comments.append(comment)
+            row = [header, body, inresponse, comment]
+            content = np.vstack([content, row])
+    
+    if(len(comments) == 0):
+            inresponse = "N/A"
+            comment = "N/A"
+            row = [header, body, inresponse, comment]
+            content = np.vstack([content, row])
+        
+    
+                
+            
+            
+
+df = pd.DataFrame(content)
+df.to_csv('babycenter.csv')
