@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Nov 27 22:30:42 2021
+
+@author: avanthikasenthil
+"""
+
+import re
+
+from bs4 import BeautifulSoup as bs
+import urllib.request
+import requests
+import pandas as pd
+from pandas import DataFrame as df
+import json
+import time
+
+import csv
+
+
+
+url = "https://www.indeed.com/jobs?q=Substitute%20Teacher&l=Wisconsin&vjk=6a9aab9882761f45&advn=5254853734318107"
+page_url = "https://www.indeed.com/"
+job_page = "https://www.indeed.com"
+page_list = []
+source = urllib.request.urlopen(url)
+soup = bs(source, 'lxml')
+name =[]
+location =[]
+pay =[]
+for i in range(1,6):
+    if i ==1:
+        source = urllib.request.urlopen(url)
+        soup = bs(source, 'lxml')
+    else:
+        a_tag=soup.find("a", {"aria-label" : i})
+        pages = page_url + a_tag.get("href")
+        source = urllib.request.urlopen(pages)
+        soup = bs(source, 'lxml')
+        
+    for link in soup.findAll("a", class_=re.compile("^tapItem")):
+        name.append(link.find("span",class_="companyName").getText())
+        location.append(link.find("div", class_="companyLocation").getText())
+        try:
+            pay.append(link.find("div", class_="attribute_snippet").getText())
+        except:
+            pay.append(" ")
+        
+
+
+with open('schools.csv', 'w') as f:
+    w = csv.writer(f)
+    w.writerow(['Name','Location', 'Pay'])
+    for i in range(0, len(name)):   
+        w.writerow([name[i], location[i], pay[i]])
+    
+
+
+         
+  #https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwixwMbJ2b70AhXQkWoFHbNFD5IQFnoECAsQAw&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DKrRzZGcHjK8&usg=AOvVaw18J8LLqaNlN5rnRexktMj0      
