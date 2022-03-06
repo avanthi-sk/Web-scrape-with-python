@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Nov 30 21:03:19 2021
+
+@author: avanthikasenthil
+"""
+
+import re
+
+from bs4 import BeautifulSoup as bs
+import urllib.request
+import requests
+import pandas as pd
+from pandas import DataFrame as df
+import time
+import csv
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+import numpy as np
+
+PATH = "/Users/avanthikasenthil/Downloads/chromedriver 6"
+driver = webdriver.Chrome(PATH)
+
+url = "https://www.dailystrength.org/group/post-partum-depression"
+page_url = "https://www.dailystrength.org"
+driver.get(url)
+
+links = []
+headers = []
+bodies = []
+content = np.array(['Post ID', 'Date','Username','Header', 'Post'])
+comments = np.array(['Comment ID', 'Post ID', 'Date','Username', 'Comment'])
+
+for i in range(1, 37):
+    button = driver.find_element_by_id("load-more-discussions")
+    button.click()
+    time.sleep(2)
+
+
+source = driver.page_source 
+
+soup = bs(source, 'lxml')   
+
+for link in soup.findAll("a", id = re.compile("ds-"), recursive = True):
+    links.append(page_url+ link.get("href"))
+  
+count = 0
+commentCount = 0;
+for i in range(0, len(links)):
+    
+    #open a new page
+    new_page= links[i]
+    source = urllib.request.urlopen(new_page)
+    soup = bs(source, 'lxml')
+    
+    #get header + body + username+ date
+    username= soup.find("span", class_="newsfeed__posted-by")
+    userName = username.find("a").text
+    
+    date = soup.find("time", class_="newsfeed__item-time").text
+    
+    header = soup.find("h1", id = "discussion_title").getText()
+    
+    body = soup.find("div", class_= "posts__content").getText()
+   
+    row = [count,date, userName, header, body]
+    content = np.vstack([content, row])
+    
+    for com in soup.findAll("div", class_="comments__item", recursive = True):
+        
+        comname = com.find("span", class_="comments__name")
+        comName = comname.find("a").text
+        
+        date = com.find("time", class_="newsfeed__itemtime").text
+        
+        comment = com.find("div", class_="comments__comment-text").text
+        
+        comRow = [commentCount, count, comName,date, comment ]
+        comments = np.vstack([comments, comRow])
+        
+        commentCount +=1
+    
+    count += 1;
+
+
+#df = pd.DataFrame(content)
+#df.to_csv('dailystrength_array.csv')
+
+df = pd.DataFrame(comments)
+df.to_csv('comments.csv')
+
+                       
+    
+        
+    
+    
+#https://stackoverflow.com/questions/58235032/element-click-intercepted-error-in-selenium    
